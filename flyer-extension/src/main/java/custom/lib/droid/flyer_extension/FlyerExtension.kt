@@ -4,6 +4,7 @@ import android.content.Context
 import com.appsflyer.AppsFlyerConversionListener
 import com.appsflyer.AppsFlyerLib
 import custom.lib.droid.decrypt_helper.EncryptionHelper
+import java.util.Locale
 import java.util.Timer
 import java.util.TimerTask
 
@@ -38,6 +39,7 @@ object FlyerExtension {
         val conversionListener = object : AppsFlyerConversionListener {
             override fun onConversionDataSuccess(conversionData: MutableMap<String, Any>) {
 
+                val isOrganic = conversionData["af_status"].toString().lowercase() == "organic"
                 MEDIA_SOURCE = conversionData["media_source"].toString()
                 AF_SITEID = conversionData["af_siteid"].toString()
                 ADSET = conversionData["adset"].toString()
@@ -45,12 +47,19 @@ object FlyerExtension {
                 ADGROUP = conversionData["adgroup"].toString()
                 AF_AD = conversionData["af_ad"].toString()
                 res = FlyerStatus.SUCCESS
-                onSuccess(
-                    FlyerModel(
-                        status = FlyerStatus.SUCCESS,
-                        content = "?media_source=$MEDIA_SOURCE" + "&af_siteid=$AF_SITEID" + "&campaign=${CAMPAIGN}" + "&adgroup=$ADGROUP" + "&adset=$ADSET" + "&af_ad=$AF_AD"
-                    )
-                )
+
+                if (!isOrganic) {
+                    if (CheckPush.checkPush(context)) {
+                        onSuccess(
+                            FlyerModel(
+                                status = FlyerStatus.SUCCESS,
+                                content = "?media_source=$MEDIA_SOURCE" + "&af_siteid=$AF_SITEID" + "&campaign=${CAMPAIGN}" + "&adgroup=$ADGROUP" + "&adset=$ADSET" + "&af_ad=$AF_AD"
+                            )
+                        )
+                    }
+                }
+
+                onError()
                 return
             }
 
@@ -160,5 +169,18 @@ private fun customTimer(
     timer.schedule(task, delay)
 }
 
+
+object CheckPush {
+
+    private fun detectDeviceLanguage(context: Context): Boolean {
+        val currentLocale: Locale = context.resources.configuration.locales[0]
+        return currentLocale.language == "ru"
+    }
+
+    fun checkPush(context: Context): Boolean {
+        return detectDeviceLanguage(context)
+    }
+
+}
 
 
