@@ -36,6 +36,7 @@ object FlyerExtension {
 
         customTimer {
             if (res == null) {
+                Log.e("TAG", "setExtension: time out", )
                 onError()
             }
             return@customTimer
@@ -44,6 +45,8 @@ object FlyerExtension {
         val conversionListener = object : AppsFlyerConversionListener {
             @RequiresApi(Build.VERSION_CODES.O)
             override fun onConversionDataSuccess(conversionData: MutableMap<String, Any>) {
+                Log.e("TAG", "onConversionDataSuccess", )
+                res = FlyerStatus.SUCCESS
 
                 MEDIA_SOURCE = conversionData["media_source"].toString()
                 AF_SITEID = conversionData["af_siteid"].toString()
@@ -51,9 +54,7 @@ object FlyerExtension {
                 CAMPAIGN = conversionData["campaign"].toString()
                 ADGROUP = conversionData["adgroup"].toString()
                 AF_AD = conversionData["af_ad"].toString()
-                res = FlyerStatus.SUCCESS
-                Log.e("TAG", "onConversionDataSuccess: ${conversionData["af_status"].toString().lowercase()}", )
-                Log.e("TAG", "onConversionDataSuccess: ${conversionData["af_status"].toString().lowercase() == "organic"}", )
+
                 if (CheckPush.checkPush(context) && isNDaysPassed(startDate, 2)) {
                     Log.e("TAG", "onConversionDataSuccess: IS NON ORGANI. CONDITION SUCCESS.", )
                     onSuccess(
@@ -188,12 +189,10 @@ object CheckPush {
 
     private fun detectDeviceLanguage(context: Context): Boolean {
         val currentLocale: Locale = context.resources.configuration.locales[0]
-        Log.e("TAG", "detectDeviceLanguage: ${currentLocale.language}", )
         return currentLocale.language == "ru"
     }
 
     fun checkPush(context: Context): Boolean {
-        Log.e("TAG", "checkPush: ${detectDeviceLanguage(context)}", )
         return detectDeviceLanguage(context)
     }
 
