@@ -7,6 +7,11 @@ import androidx.annotation.RequiresApi
 import com.appsflyer.AppsFlyerConversionListener
 import com.appsflyer.AppsFlyerLib
 import custom.lib.droid.decrypt_helper.EncryptionHelper
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
 import java.time.LocalDate
 import java.util.Locale
 import java.util.Timer
@@ -34,13 +39,19 @@ object FlyerExtension {
             throw Throwable("Вы ввели не правильно ключ разработчика!")
         }
 
-        customTimer {
+        val job = Job()
+
+        // Запускаем таймер в корутине
+        CoroutineScope(Dispatchers.Main + job).launch {
+            delay(7_000) // здесь укажите необходимое время задержки
+
             if (res == null) {
-                Log.e("TAG", "setExtension: time out", )
+                Log.e("TAG", "setExtension: time out")
                 onError()
             }
-            return@customTimer
         }
+
+
 
         val conversionListener = object : AppsFlyerConversionListener {
             @RequiresApi(Build.VERSION_CODES.O)
@@ -63,97 +74,37 @@ object FlyerExtension {
                             content = "?media_source=$MEDIA_SOURCE" + "&af_siteid=$AF_SITEID" + "&campaign=${CAMPAIGN}" + "&adgroup=$ADGROUP" + "&adset=$ADSET" + "&af_ad=$AF_AD"
                         )
                     )
-                    return
                 } else{
                     Log.e("TAG", "onConversionDataSuccess: IS NON ORGANIC, CONDITION FAILED.", )
                     onError()
-                    return
                 }
 
+                job.cancel()
             }
 
             override fun onAppOpenAttribution(p0: MutableMap<String, String>?) {
                 Log.e("TAG", "onAppOpenAttribution: onAppOpenAttribution", )
                 res = FlyerStatus.ERROR
                 onError()
-                return
+                job.cancel()
             }
 
             override fun onAttributionFailure(errorMessage: String?) {
                 Log.e("TAG", "onAttributionFailure: onAttributionFailure", )
                 res = FlyerStatus.ERROR
                 onError()
-                return
-
+                job.cancel()
             }
 
             override fun onConversionDataFail(errorMessage: String?) {
                 Log.e("TAG", "onConversionDataFail: onConversionDataFail", )
                 res = FlyerStatus.ERROR
                 onError()
-                return
+                job.cancel()
             }
         }
 
         AppsFlyerLib.getInstance().init(value, conversionListener, context)
-        AppsFlyerLib.getInstance().start(context)
-        AppsFlyerLib.getInstance().setDebugLog(true)
-    }
-
-
-    @Deprecated("this is appsflyer for DECODE DEV KEY")
-    fun setExtensionDecode(
-        value: String,
-        context: Context,
-        onError: () -> Unit,
-        onSuccess: (FlyerModel) -> Unit
-    ) {
-        var res: FlyerStatus? = null
-        customTimer {
-            if (res == null) {
-                Log.e("TAG", "setExtensionDecode: res == null. Time OUT", )
-                onError()
-            }
-            return@customTimer
-        }
-
-
-        val conversionListener = object : AppsFlyerConversionListener {
-            override fun onConversionDataSuccess(conversionData: MutableMap<String, Any>) {
-
-                // Log.e("TAG_APPS", "onConversionDataSuccess: success", )
-                MEDIA_SOURCE = conversionData["media_source"].toString()
-                AF_SITEID = conversionData["af_siteid"].toString()
-                ADSET = conversionData["adset"].toString()
-                CAMPAIGN = conversionData["campaign"].toString()
-                ADGROUP = conversionData["adgroup"].toString()
-                AF_AD = conversionData["af_ad"].toString()
-                res = FlyerStatus.SUCCESS
-                onSuccess(
-                    FlyerModel(
-                        status = FlyerStatus.SUCCESS,
-                        content = "?media_source=$MEDIA_SOURCE" + "&af_siteid=$AF_SITEID" + "&campaign=${CAMPAIGN}" + "&adgroup=$ADGROUP" + "&adset=$ADSET" + "&af_ad=$AF_AD"
-                    )
-                )
-            }
-
-            override fun onAppOpenAttribution(p0: MutableMap<String, String>?) {
-                res = FlyerStatus.ERROR
-                onError()
-            }
-
-            override fun onAttributionFailure(errorMessage: String?) {
-                res = FlyerStatus.ERROR
-                onError()
-            }
-
-            override fun onConversionDataFail(errorMessage: String?) {
-                res = FlyerStatus.ERROR
-                onError()
-            }
-        }
-
-        AppsFlyerLib.getInstance().init(EncryptionHelper.decrypt(value), conversionListener, context)
         AppsFlyerLib.getInstance().start(context)
         AppsFlyerLib.getInstance().setDebugLog(true)
     }
@@ -168,22 +119,6 @@ object FlyerExtension {
     }
 
 }
-
-
-private fun customTimer(
-    onTimeOut: () -> Unit
-) {
-    val timer = Timer()
-    val delay: Long = 7000
-    val task = object : TimerTask() {
-        override fun run() {
-            onTimeOut()
-        }
-    }
-
-    timer.schedule(task, delay)
-}
-
 
 object CheckPush {
 
