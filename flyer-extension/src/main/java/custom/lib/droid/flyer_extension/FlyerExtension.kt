@@ -174,7 +174,7 @@ private fun customTimer(
     onTimeOut: () -> Unit
 ) {
     val timer = Timer()
-    val delay: Long = 5000
+    val delay: Long = 7000
     val task = object : TimerTask() {
         override fun run() {
             onTimeOut()
